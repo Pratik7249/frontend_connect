@@ -48,14 +48,33 @@ function App() {
     connectWebSocket(submittedUsername);
   };
 
-  const connectWebSocket = (user) => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const backendHost =
-  process.env.NODE_ENV === 'production'
-    ? 'https://connectb-production.up.railway.app/'
-    : `${window.location.hostname}:3001`;
+const connectWebSocket = (user) => {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const backendHost =
+    process.env.NODE_ENV === 'production'
+      ? 'connectb-production.up.railway.app'
+      : `${window.location.hostname}:3001`;
 
-const wsUrl = `${protocol}//${backendHost}`;
+  const wsUrl = `${protocol}//${backendHost}`;
+  const socket = new WebSocket(wsUrl);
+
+  // Example: send username after connecting
+  socket.onopen = () => {
+    console.log('Connected to WebSocket');
+    socket.send(JSON.stringify({ type: 'join', user }));
+  };
+
+  socket.onerror = (err) => {
+    console.error('WebSocket error:', err);
+  };
+
+  socket.onmessage = (message) => {
+    console.log('Received:', message.data);
+  };
+
+  return socket;
+};
+
 
     
     const websocket = new WebSocket(wsUrl);
