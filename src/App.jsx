@@ -49,17 +49,17 @@ function App() {
   };
 
   const connectWebSocket = (user) => {
-    // Use WS_BASE if set, otherwise fallback to auto-detect
+    // ✅ Always use an absolute WebSocket URL
     let wsUrl = WS_BASE;
     if (!wsUrl) {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const backendHost =
+      const isHttps = window.location.protocol === 'https:';
+      wsUrl =
         import.meta.env.MODE === 'production'
-          ? 'connectb-production.up.railway.app'
-          : `${window.location.hostname}:3001`;
-      wsUrl = `${protocol}//${backendHost}`;
+          ? `wss://connectb-production.up.railway.app`
+          : `${isHttps ? 'wss' : 'ws'}://localhost:3001`;
     }
 
+    console.log('Connecting to WebSocket:', wsUrl);
     const websocket = new WebSocket(wsUrl);
 
     websocket.onopen = () => {
