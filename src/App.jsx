@@ -50,7 +50,13 @@ function App() {
 
   const connectWebSocket = (user) => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${WS_BASE}`;
+const backendHost =
+  process.env.NODE_ENV === 'production'
+    ? 'https://connectb-production.up.railway.app/'
+    : `${window.location.hostname}:3001`;
+
+const wsUrl = `${protocol}//${backendHost}`;
+
     
     const websocket = new WebSocket(wsUrl);
     
