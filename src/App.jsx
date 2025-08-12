@@ -1,3 +1,4 @@
+// client/src/App.jsx
 import React, { useState, useEffect } from 'react';
 import GameBoard from './components/GameBoard';
 import UsernameForm from './components/UsernameForm';
@@ -5,9 +6,9 @@ import Leaderboard from './components/Leaderboard';
 import GameStatus from './components/GameStatus';
 import './App.css';
 
-// ✅ Load URLs from environment variables
+// Load from Vite env
 const API_BASE = import.meta.env.VITE_API_URL;
-const WS_BASE = import.meta.env.VITE_WS_URL;
+const WS_BASE = import.meta.env.VITE_WS_URL; // expected like "wss://connectb-production.up.railway.app" or "ws://localhost:3001"
 
 function App() {
   const [username, setUsername] = useState('');
@@ -21,6 +22,11 @@ function App() {
   useEffect(() => {
     fetchLeaderboard();
     fetchGameStats();
+    // cleanup on unmount
+    return () => {
+      if (ws) ws.close();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchLeaderboard = async () => {
@@ -49,17 +55,32 @@ function App() {
   };
 
   const connectWebSocket = (user) => {
-    // ✅ Always use an absolute WebSocket URL
+    // Prefer explicit WS_BASE set via env; fallback to smart defaults
     let wsUrl = WS_BASE;
     if (!wsUrl) {
-      const isHttps = window.location.protocol === 'https:';
       wsUrl =
         import.meta.env.MODE === 'production'
-          ? `wss://connectb-production.up.railway.app`
-          : `${isHttps ? 'wss' : 'ws'}://localhost:3001`;
+          ? `wss://connectb-production.up.railway.app/ws`
+          : `ws://localhost:3001/ws`;
+    } else {
+      // ensure path exists: if env doesn't include path, append /ws
+      try {
+        const parsed = new URL(wsUrl);
+        if (!parsed.pathname || parsed.pathname === '/') {
+          // append /ws
+          wsUrl = wsUrl.replace(/\/+$/, '') + '/ws';
+        }
+      } catch (e) {
+        // if WS_BASE wasn't a full URL (unlikely), fallback to production/dev scheme
+        wsUrl =
+          import.meta.env.MODE === 'production'
+            ? `wss://connectb-production.up.railway.app/ws`
+            : `ws://localhost:3001/ws`;
+      }
     }
 
     console.log('Connecting to WebSocket:', wsUrl);
+
     const websocket = new WebSocket(wsUrl);
 
     websocket.onopen = () => {
