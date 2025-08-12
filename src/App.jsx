@@ -240,6 +240,6 @@ const connectWebSocket = (user) => {
       </main>
     </div>
   );
-}
+
 
 export default App;
