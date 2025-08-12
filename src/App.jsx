@@ -5,7 +5,7 @@ import Leaderboard from './components/Leaderboard';
 import GameStatus from './components/GameStatus';
 import './App.css';
 
-// ✅ Base URLs from environment variables
+// ✅ Load URLs from environment variables
 const API_BASE = import.meta.env.VITE_API_URL;
 const WS_BASE = import.meta.env.VITE_WS_URL;
 
@@ -49,26 +49,26 @@ function App() {
   };
 
   const connectWebSocket = (user) => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const backendHost =
-  process.env.NODE_ENV === 'production'
-    ? 'https://connectb-production.up.railway.app/'
-    : `${window.location.hostname}:3001`;
+    // Use WS_BASE if set, otherwise fallback to auto-detect
+    let wsUrl = WS_BASE;
+    if (!wsUrl) {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const backendHost =
+        import.meta.env.MODE === 'production'
+          ? 'connectb-production.up.railway.app'
+          : `${window.location.hostname}:3001`;
+      wsUrl = `${protocol}//${backendHost}`;
+    }
 
-const wsUrl = `${protocol}//${backendHost}`;
-
-    
     const websocket = new WebSocket(wsUrl);
-    
+
     websocket.onopen = () => {
       console.log('WebSocket connected');
       setIsConnected(true);
-      
       websocket.send(JSON.stringify({
         type: 'join_game',
         username: user
       }));
-      
       setMatchmakingStatus('Looking for opponent...');
     };
 
@@ -101,16 +101,13 @@ const wsUrl = `${protocol}//${backendHost}`;
       case 'matchmaking':
         setMatchmakingStatus(data.message);
         break;
-        
       case 'game_state':
         setGameState(data.game);
         setMatchmakingStatus('');
         break;
-        
       case 'error':
         console.error('Game error:', data.message);
         break;
-        
       default:
         console.log('Unknown message type:', data.type);
     }
@@ -173,12 +170,12 @@ const wsUrl = `${protocol}//${backendHost}`;
 
           {gameState && (
             <>
-              <GameStatus 
-                gameState={gameState} 
+              <GameStatus
+                gameState={gameState}
                 username={username}
                 onNewGame={handleNewGame}
               />
-              <GameBoard 
+              <GameBoard
                 board={gameState.board}
                 onColumnClick={handleColumnClick}
                 isYourTurn={gameState.isYourTurn}
@@ -189,11 +186,11 @@ const wsUrl = `${protocol}//${backendHost}`;
         </div>
 
         <div className="sidebar">
-          <Leaderboard 
-            leaderboard={leaderboard} 
+          <Leaderboard
+            leaderboard={leaderboard}
             onRefresh={fetchLeaderboard}
           />
-          
+
           {gameStats && (
             <div className="game-stats">
               <h3>Game Statistics</h3>
