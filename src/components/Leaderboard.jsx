@@ -28,7 +28,7 @@ export default function Leaderboard({ leaderboard = [] }) {
           </thead>
           <tbody>
             {sortedLeaderboard.slice(0, 3).map(({ username, wins, losses }, index) => (
-              <tr key={username} style={styles.row}>
+              <tr key={`${username}-${index}`} style={styles.row}>
                 <td style={styles.td}>{getRankIcon(index)}</td>
                 <td style={styles.td}>{username}</td>
                 <td style={styles.td}>{wins}</td>

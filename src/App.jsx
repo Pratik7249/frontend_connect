@@ -1,4 +1,3 @@
-// client/src/App.jsx
 import React, { useState, useEffect } from 'react';
 import GameBoard from './components/GameBoard';
 import UsernameForm from './components/UsernameForm';
@@ -6,9 +5,8 @@ import Leaderboard from './components/Leaderboard';
 import GameStatus from './components/GameStatus';
 import './App.css';
 
-// Load from Vite env
 const API_BASE = import.meta.env.VITE_API_URL;
-const WS_BASE = import.meta.env.VITE_WS_URL; // expected like "wss://connectb-production.up.railway.app" or "ws://localhost:3001"
+const WS_BASE = import.meta.env.VITE_WS_URL;
 
 function App() {
   const [username, setUsername] = useState('');
@@ -22,7 +20,7 @@ function App() {
   useEffect(() => {
     fetchLeaderboard();
     fetchGameStats();
-    // cleanup on unmount
+
     return () => {
       if (ws) ws.close();
     };
@@ -55,7 +53,6 @@ function App() {
   };
 
   const connectWebSocket = (user) => {
-    // Prefer explicit WS_BASE set via env; fallback to smart defaults
     let wsUrl = WS_BASE;
     if (!wsUrl) {
       wsUrl =
@@ -63,15 +60,12 @@ function App() {
           ? `wss://connectb-production.up.railway.app/ws`
           : `ws://localhost:3001/ws`;
     } else {
-      // ensure path exists: if env doesn't include path, append /ws
       try {
         const parsed = new URL(wsUrl);
         if (!parsed.pathname || parsed.pathname === '/') {
-          // append /ws
           wsUrl = wsUrl.replace(/\/+$/, '') + '/ws';
         }
       } catch (e) {
-        // if WS_BASE wasn't a full URL (unlikely), fallback to production/dev scheme
         wsUrl =
           import.meta.env.MODE === 'production'
             ? `wss://connectb-production.up.railway.app/ws`
@@ -86,10 +80,12 @@ function App() {
     websocket.onopen = () => {
       console.log('WebSocket connected');
       setIsConnected(true);
-      websocket.send(JSON.stringify({
-        type: 'join_game',
-        username: user
-      }));
+      websocket.send(
+        JSON.stringify({
+          type: 'join_game',
+          username: user,
+        })
+      );
       setMatchmakingStatus('Looking for opponent...');
     };
 
@@ -118,37 +114,55 @@ function App() {
   };
 
   const handleWebSocketMessage = (data) => {
-    switch (data.type) {
-      case 'matchmaking':
-        setMatchmakingStatus(data.message);
-        break;
-      case 'game_state':
-        setGameState(data.game);
-        setMatchmakingStatus('');
-        break;
-      case 'error':
-        console.error('Game error:', data.message);
-        break;
-      default:
-        console.log('Unknown message type:', data.type);
-    }
-  };
+  switch (data.type) {
+    case 'matchmaking':
+      setMatchmakingStatus(data.message);
+      break;
+    case 'game_state':
+      setGameState(data.game);
+      setMatchmakingStatus('');
+      if (data.game.status === 'finished') {
+        fetchLeaderboard();
+        fetchGameStats();
+      }
+      break;
+    case 'leaderboard_update':    // <-- Add this case
+      if (data.leaderboard) {
+        setLeaderboard(data.leaderboard);
+        console.log('Leaderboard data:', leaderboard);
+      } else {
+        // If no data included, just refresh from API
+        fetchLeaderboard();
+      }
+      break;
+    case 'error':
+      console.error('Game error:', data.message);
+      break;
+    default:
+      console.log('Unknown message type:', data.type);
+  }
+};
+
 
   const handleColumnClick = (column) => {
     if (ws && gameState && gameState.isYourTurn) {
-      ws.send(JSON.stringify({
-        type: 'make_move',
-        column: column
-      }));
+      ws.send(
+        JSON.stringify({
+          type: 'make_move',
+          column: column,
+        })
+      );
     }
   };
 
   const handleNewGame = () => {
     if (ws) {
-      ws.send(JSON.stringify({
-        type: 'join_game',
-        username: username
-      }));
+      ws.send(
+        JSON.stringify({
+          type: 'join_game',
+          username: username,
+        })
+      );
       setGameState(null);
       setMatchmakingStatus('Looking for opponent...');
     }
@@ -184,9 +198,7 @@ function App() {
       <main className="app-main">
         <div className="game-section">
           {matchmakingStatus && (
-            <div className="matchmaking-status">
-              {matchmakingStatus}
-            </div>
+            <div className="matchmaking-status">{matchmakingStatus}</div>
           )}
 
           {gameState && (
@@ -207,10 +219,7 @@ function App() {
         </div>
 
         <div className="sidebar">
-          <Leaderboard
-            leaderboard={leaderboard}
-            onRefresh={fetchLeaderboard}
-          />
+          <Leaderboard leaderboard={leaderboard} onRefresh={fetchLeaderboard} />
 
           {gameStats && (
             <div className="game-stats">
@@ -218,15 +227,21 @@ function App() {
               <div className="stats-grid">
                 <div className="stat-item">
                   <span className="stat-label">Total Games:</span>
-                  <span className="stat-value">{gameStats.overall?.total_games || 0}</span>
+                  <span className="stat-value">
+                    {gameStats.overall?.total_games || 0}
+                  </span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Human Games:</span>
-                  <span className="stat-value">{gameStats.overall?.human_games || 0}</span>
+                  <span className="stat-value">
+                    {gameStats.overall?.human_games || 0}
+                  </span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Bot Games:</span>
-                  <span className="stat-value">{gameStats.overall?.bot_games || 0}</span>
+                  <span className="stat-value">
+                    {gameStats.overall?.bot_games || 0}
+                  </span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Total Players:</span>
