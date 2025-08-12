@@ -5,6 +5,10 @@ import Leaderboard from './components/Leaderboard';
 import GameStatus from './components/GameStatus';
 import './App.css';
 
+// ✅ Base URLs from environment variables
+const API_BASE = import.meta.env.VITE_API_URL;
+const WS_BASE = import.meta.env.VITE_WS_URL;
+
 function App() {
   const [username, setUsername] = useState('');
   const [gameState, setGameState] = useState(null);
@@ -15,16 +19,13 @@ function App() {
   const [gameStats, setGameStats] = useState(null);
 
   useEffect(() => {
-    // Fetch initial data
     fetchLeaderboard();
     fetchGameStats();
   }, []);
 
-  
-
   const fetchLeaderboard = async () => {
     try {
-      const response = await fetch('/api/leaderboard');
+      const response = await fetch(`${API_BASE}/api/leaderboard`);
       const data = await response.json();
       setLeaderboard(data);
     } catch (error) {
@@ -34,7 +35,7 @@ function App() {
 
   const fetchGameStats = async () => {
     try {
-      const response = await fetch('/api/stats');
+      const response = await fetch(`${API_BASE}/api/stats`);
       const data = await response.json();
       setGameStats(data);
     } catch (error) {
@@ -49,7 +50,7 @@ function App() {
 
   const connectWebSocket = (user) => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.hostname}:3001`;
+    const wsUrl = `${protocol}//${WS_BASE}`;
     
     const websocket = new WebSocket(wsUrl);
     
@@ -57,7 +58,6 @@ function App() {
       console.log('WebSocket connected');
       setIsConnected(true);
       
-      // Join game
       websocket.send(JSON.stringify({
         type: 'join_game',
         username: user
